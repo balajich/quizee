@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: quizdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  command-service:
+    build: ./command-service
+    ports:
+      - "8001:8001"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/quizdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  query-service:
+    build: ./query-service
+    ports:
+      - "8002:8002"
+    environment:
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/quizdb
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
