@@ -107,9 +107,9 @@ async def query_quiz_list(
             q.created_at,
             COALESCE(ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL), ARRAY[]::text[]) AS tags,
             COUNT(DISTINCT qs.question_id) AS question_count
-        FROM quizzes q
-        LEFT JOIN tags t ON t.quiz_id = q.quiz_id
-        LEFT JOIN questions qs ON qs.quiz_id = q.quiz_id
+        FROM quiz q
+        LEFT JOIN tag t ON t.quiz_id = q.quiz_id
+        LEFT JOIN question qs ON qs.quiz_id = q.quiz_id
         {where}
         GROUP BY q.quiz_id
         ORDER BY q.created_at DESC
@@ -117,7 +117,7 @@ async def query_quiz_list(
     """, *params, limit, offset)
 
     count_row = await conn.fetchrow(f"""
-        SELECT COUNT(*) FROM quizzes q {where}
+        SELECT COUNT(*) FROM quiz q {where}
     """, *params)
 
     items = [
@@ -140,26 +140,26 @@ async def query_quiz_detail(conn: asyncpg.Connection, quiz_id: str) -> QuizDetai
     quiz = await conn.fetchrow("""
         SELECT quiz_id::text, title, description, technology, difficulty,
                is_published, created_at, updated_at
-        FROM quizzes WHERE quiz_id = $1
+        FROM quiz WHERE quiz_id = $1
     """, quiz_id)
 
     if not quiz:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
     tag_rows = await conn.fetch(
-        "SELECT name FROM tags WHERE quiz_id = $1", quiz_id
+        "SELECT name FROM tag WHERE quiz_id = $1", quiz_id
     )
     question_rows = await conn.fetch("""
         SELECT question_id::text, text, question_type, points,
                explanation, reference_link, position
-        FROM questions WHERE quiz_id = $1 ORDER BY position
+        FROM question WHERE quiz_id = $1 ORDER BY position
     """, quiz_id)
 
     questions = []
     for q in question_rows:
         option_rows = await conn.fetch("""
             SELECT option_id::text, text, is_correct, position
-            FROM options WHERE question_id = $1 ORDER BY position
+            FROM option WHERE question_id = $1 ORDER BY position
         """, q["question_id"])
         questions.append(QuestionView(
             question_id=q["question_id"],
@@ -224,7 +224,7 @@ async def get_question(quiz_id: str, question_id: str, conn=Depends(get_db)):
     row = await conn.fetchrow("""
         SELECT question_id::text, text, question_type, points,
                explanation, reference_link, position
-        FROM questions WHERE question_id = $1 AND quiz_id = $2
+        FROM question WHERE question_id = $1 AND quiz_id = $2
     """, question_id, quiz_id)
 
     if not row:
@@ -232,7 +232,7 @@ async def get_question(quiz_id: str, question_id: str, conn=Depends(get_db)):
 
     options = await conn.fetch("""
         SELECT option_id::text, text, is_correct, position
-        FROM options WHERE question_id = $1 ORDER BY position
+        FROM option WHERE question_id = $1 ORDER BY position
     """, question_id)
 
     return QuestionView(

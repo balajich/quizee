@@ -3,7 +3,7 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE IF NOT EXISTS quizzes (
+CREATE TABLE IF NOT EXISTS quiz (
     quiz_id     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title       TEXT NOT NULL,
     description TEXT,
@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS quizzes (
     updated_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS questions (
+CREATE TABLE IF NOT EXISTS question (
     question_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    quiz_id     UUID NOT NULL REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    quiz_id     UUID NOT NULL REFERENCES quiz(quiz_id) ON DELETE CASCADE,
     text        TEXT NOT NULL,
     question_type TEXT NOT NULL DEFAULT 'MCQ',  -- MCQ | True/False
     points      INT  DEFAULT 1,
@@ -26,24 +26,24 @@ CREATE TABLE IF NOT EXISTS questions (
     created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS options (
+CREATE TABLE IF NOT EXISTS option (
     option_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    question_id UUID NOT NULL REFERENCES questions(question_id) ON DELETE CASCADE,
+    question_id UUID NOT NULL REFERENCES question(question_id) ON DELETE CASCADE,
     text        TEXT NOT NULL,
     is_correct  BOOLEAN NOT NULL DEFAULT FALSE,
     position    INT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS tags (
+CREATE TABLE IF NOT EXISTS tag (
     tag_id   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    quiz_id  UUID NOT NULL REFERENCES quizzes(quiz_id) ON DELETE CASCADE,
+    quiz_id  UUID NOT NULL REFERENCES quiz(quiz_id) ON DELETE CASCADE,
     name     TEXT NOT NULL
 );
 
 -- Indexes for fast reads
-CREATE INDEX IF NOT EXISTS idx_quizzes_technology  ON quizzes(technology);
-CREATE INDEX IF NOT EXISTS idx_quizzes_difficulty  ON quizzes(difficulty);
-CREATE INDEX IF NOT EXISTS idx_quizzes_published   ON quizzes(is_published);
-CREATE INDEX IF NOT EXISTS idx_questions_quiz_id   ON questions(quiz_id);
-CREATE INDEX IF NOT EXISTS idx_options_question_id ON options(question_id);
-CREATE INDEX IF NOT EXISTS idx_tags_quiz_id        ON tags(quiz_id);
+CREATE INDEX IF NOT EXISTS idx_quiz_technology  ON quiz(technology);
+CREATE INDEX IF NOT EXISTS idx_quiz_difficulty  ON quiz(difficulty);
+CREATE INDEX IF NOT EXISTS idx_quiz_published   ON quiz(is_published);
+CREATE INDEX IF NOT EXISTS idx_question_quiz_id ON question(quiz_id);
+CREATE INDEX IF NOT EXISTS idx_option_question_id ON option(question_id);
+CREATE INDEX IF NOT EXISTS idx_tag_quiz_id      ON tag(quiz_id);

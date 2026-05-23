@@ -120,6 +120,93 @@ curl http://localhost:8002/queries/quizzes/{quiz_id}
 
 ---
 
+## Running Tests
+
+Tests are BDD-style API tests written with [pytest-bdd](https://pytest-bdd.readthedocs.io/) and [Gherkin](https://cucumber.io/docs/gherkin/) feature files. They run against **live services**, so the full stack must be deployed before running them.
+
+### Prerequisites
+
+Start the full stack first:
+
+```bash
+bash app.sh up
+```
+
+> **If the database schema changed** (e.g. tables were renamed) the existing PostgreSQL
+> volume will still hold the old schema — `app.sh up` does not re-initialise it.
+> Run a full reset to drop the volume and re-apply the schema before testing:
+>
+> ```bash
+> bash app.sh reset
+> ```
+
+Or run individual services:
+
+```bash
+bash command-service/scripts/run.sh
+bash query-service/scripts/run.sh
+```
+
+### Command Service Tests
+
+```bash
+bash command-service/scripts/test.sh
+```
+
+Covers 11 scenarios across 3 features:
+
+| Feature | Scenarios |
+|---|---|
+| `create_quiz.feature` | Valid creation, unsupported technology, unsupported difficulty, no correct MCQ option, multiple correct MCQ options, Java quiz with 10 MCQ questions |
+| `publish_quiz.feature` | Publish draft quiz, publish already-published quiz (400), publish non-existent quiz (404) |
+| `delete_quiz.feature` | Delete existing quiz, delete non-existent quiz (404) |
+
+### Query Service Tests
+
+```bash
+bash query-service/scripts/test.sh
+```
+
+Covers 8 scenarios across 4 features:
+
+| Feature | Scenarios |
+|---|---|
+| `list_quizzes.feature` | Paginated list, filter by technology, filter by difficulty |
+| `get_quiz.feature` | Get existing quiz with full detail, get non-existent quiz (404) |
+| `get_question.feature` | Get existing question with options, get non-existent question (404) |
+| `get_technologies.feature` | All supported technologies returned |
+
+> **Note:** Query tests create and publish one shared quiz via the command service at session start, then clean it up on teardown. Both services must be running.
+
+### Override service URLs
+
+By default tests target `localhost`. Pass environment variables to point at a remote deployment:
+
+```bash
+# Command service tests against a remote host
+COMMAND_URL=http://myserver:8001 bash command-service/scripts/test.sh
+
+# Query service tests against a remote host
+COMMAND_URL=http://myserver:8001 QUERY_URL=http://myserver:8002 bash query-service/scripts/test.sh
+```
+
+### Run a single feature or scenario
+
+The test scripts pass any extra arguments through to `pytest`:
+
+```bash
+# Run one feature file
+bash command-service/scripts/test.sh tests/features/create_quiz.feature
+
+# Run by keyword
+bash command-service/scripts/test.sh -k "java"
+
+# Stop on first failure
+bash command-service/scripts/test.sh -x
+```
+
+---
+
 ## Cloud Deployment Options (cheap)
 
 ### Option 1 — Supabase + Railway (~$0–$5/month)
@@ -154,18 +241,51 @@ az containerapp create --name quiz-query  --image <registry>.azurecr.io/quiz-que
 ## Project Structure
 
 ```
-quiz-cqrs/
+quizee/
+├── app.sh                        ← build | up | down | logs (full stack)
 ├── docker-compose.yml
 ├── db/
-│   └── schema.sql           ← run once to create tables
+│   └── schema.sql                ← run once to create tables
 ├── command-service/
-│   ├── main.py              ← POST /commands/quizzes
+│   ├── main.py                   ← POST /commands/quizzes
 │   ├── requirements.txt
-│   └── Dockerfile
+│   ├── Dockerfile
+│   ├── scripts/
+│   │   ├── build.sh              ← build image
+│   │   ├── run.sh                ← start service
+│   │   ├── delete.sh             ← stop & remove container
+│   │   └── test.sh               ← run BDD tests
+│   └── tests/
+│       ├── conftest.py           ← fixtures & all step definitions
+│       ├── test_create_quiz.py
+│       ├── test_publish_quiz.py
+│       ├── test_delete_quiz.py
+│       ├── requirements.txt
+│       └── features/
+│           ├── create_quiz.feature
+│           ├── publish_quiz.feature
+│           └── delete_quiz.feature
 └── query-service/
-    ├── main.py              ← GET /queries/quizzes
+    ├── main.py                   ← GET /queries/quizzes
     ├── requirements.txt
-    └── Dockerfile
+    ├── Dockerfile
+    ├── scripts/
+    │   ├── build.sh
+    │   ├── run.sh
+    │   ├── delete.sh
+    │   └── test.sh               ← run BDD tests
+    └── tests/
+        ├── conftest.py           ← fixtures & all step definitions
+        ├── test_list_quizzes.py
+        ├── test_get_quiz.py
+        ├── test_get_question.py
+        ├── test_get_technologies.py
+        ├── requirements.txt
+        └── features/
+            ├── list_quizzes.feature
+            ├── get_quiz.feature
+            ├── get_question.feature
+            └── get_technologies.feature
 ```
 
 ## Interactive API docs
