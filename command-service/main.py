@@ -71,29 +71,29 @@ async def handle_create_quiz(cmd: CreateQuizCommand, conn: asyncpg.Connection) -
     async with conn.transaction():
         # Insert quiz
         await conn.execute("""
-            INSERT INTO quizzes (quiz_id, title, description, technology, difficulty, created_at, updated_at)
+            INSERT INTO quiz (quiz_id, title, description, technology, difficulty, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6, $6)
         """, quiz_id, cmd.title, cmd.description, cmd.technology, cmd.difficulty, now)
 
         # Insert tags
         for tag_name in (cmd.tags or []):
             await conn.execute("""
-                INSERT INTO tags (tag_id, quiz_id, name) VALUES ($1, $2, $3)
+                INSERT INTO tag (tag_id, quiz_id, name) VALUES ($1, $2, $3)
             """, str(uuid4()), quiz_id, tag_name.strip().lower())
 
         # Insert questions + options
         for position, q in enumerate(cmd.questions):
             question_id = str(uuid4())
             await conn.execute("""
-                INSERT INTO questions (question_id, quiz_id, text, question_type, points,
-                                       explanation, reference_link, position, created_at)
+                INSERT INTO question (question_id, quiz_id, text, question_type, points,
+                                      explanation, reference_link, position, created_at)
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             """, question_id, quiz_id, q.text, q.question_type, q.points,
                 q.explanation, q.reference_link, position, now)
 
             for opt_pos, opt in enumerate(q.options):
                 await conn.execute("""
-                    INSERT INTO options (option_id, question_id, text, is_correct, position)
+                    INSERT INTO option (option_id, question_id, text, is_correct, position)
                     VALUES ($1, $2, $3, $4, $5)
                 """, str(uuid4()), question_id, opt.text, opt.is_correct, opt_pos)
 
@@ -102,7 +102,7 @@ async def handle_create_quiz(cmd: CreateQuizCommand, conn: asyncpg.Connection) -
 
 async def handle_publish_quiz(quiz_id: str, conn: asyncpg.Connection):
     result = await conn.fetchrow(
-        "SELECT quiz_id, is_published FROM quizzes WHERE quiz_id = $1", quiz_id
+        "SELECT quiz_id, is_published FROM quiz WHERE quiz_id = $1", quiz_id
     )
     if not result:
         raise HTTPException(status_code=404, detail="Quiz not found")
@@ -110,7 +110,7 @@ async def handle_publish_quiz(quiz_id: str, conn: asyncpg.Connection):
         raise HTTPException(status_code=400, detail="Quiz is already published")
 
     await conn.execute("""
-        UPDATE quizzes SET is_published = TRUE, updated_at = $1 WHERE quiz_id = $2
+        UPDATE quiz SET is_published = TRUE, updated_at = $1 WHERE quiz_id = $2
     """, datetime.now(timezone.utc), quiz_id)
 
 
@@ -158,7 +158,7 @@ async def publish_quiz(quiz_id: str, conn=Depends(get_db)):
 @app.delete("/commands/quizzes/{quiz_id}", status_code=204)
 async def delete_quiz(quiz_id: str, conn=Depends(get_db)):
     """Delete a quiz and all its questions/options (cascade)."""
-    result = await conn.execute("DELETE FROM quizzes WHERE quiz_id = $1", quiz_id)
+    result = await conn.execute("DELETE FROM quiz WHERE quiz_id = $1", quiz_id)
     if result == "DELETE 0":
         raise HTTPException(status_code=404, detail="Quiz not found")
 
