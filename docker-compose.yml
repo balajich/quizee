@@ -2,6 +2,7 @@ version: "3.9"
 
 services:
 
+  # ── Database ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     environment:
@@ -19,6 +20,7 @@ services:
       timeout: 5s
       retries: 5
 
+  # ── Backend ───────────────────────────────────────────────────────────────
   command-service:
     build: ./command-service
     ports:
@@ -38,6 +40,37 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+  # ── Front-end apps ────────────────────────────────────────────────────────
+  # Note: NEXT_PUBLIC_* and EXPO_PUBLIC_* URLs use localhost because API calls
+  # are made from the user's browser, not from inside the Docker network.
+
+  admin-app:
+    build:
+      context: .
+      dockerfile: apps/admin-app/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      NEXT_PUBLIC_QUERY_URL: http://localhost:8002
+      NEXT_PUBLIC_COMMAND_URL: http://localhost:8001
+    depends_on:
+      - command-service
+      - query-service
+
+  user-app:
+    build:
+      context: .
+      dockerfile: apps/user-app/Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      CI: "1"
+      EXPO_PUBLIC_QUERY_URL: http://localhost:8002
+      EXPO_PUBLIC_COMMAND_URL: http://localhost:8001
+    depends_on:
+      - command-service
+      - query-service
 
 volumes:
   postgres_data:

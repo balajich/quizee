@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Quizee",
+    "slug": "quizee-user",
+    "version": "1.0.0",
+    "scheme": "quizee",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.quizee.user"
+    },
+    "android": {
+      "package": "com.quizee.user"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

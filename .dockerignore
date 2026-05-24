@@ -1,0 +1,43 @@
+# Dependencies — reinstalled inside the image
+node_modules/
+**/node_modules/
+
+# Next.js build output
+apps/admin-app/.next/
+apps/admin-app/out/
+
+# Expo / React Native build output
+apps/user-app/.expo/
+apps/user-app/web-build/
+apps/user-app/dist/
+
+# Python virtual environments
+**/.venv/
+**/venv/
+**/env/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+
+# Test artefacts
+**/tests/report.html
+**/.pytest_cache/
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+
+# Secrets — never bake into images
+.env
+.env.local
+.env.*.local
