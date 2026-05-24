@@ -6,9 +6,12 @@ TESTS_DIR="$SERVICE_DIR/tests"
 
 cd "$TESTS_DIR"
 
+# Resolve python binary — Windows often only has 'python', not 'python3'
+PYTHON=$(command -v python3 2>/dev/null || command -v python)
+
 if [ ! -d ".venv" ]; then
     echo "==> Creating virtual environment..."
-    python3 -m venv .venv
+    "$PYTHON" -m venv .venv
 fi
 
 # Activate venv (Git Bash on Windows uses Scripts/, Unix uses bin/)
