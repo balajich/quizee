@@ -28,7 +28,7 @@
 ### Option A — Docker Compose (recommended, one command)
 
 ```powershell
-cd quiz-cqrs
+cd C:\code\quizee
 docker-compose up --build
 ```
 
